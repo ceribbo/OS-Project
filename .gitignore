@@ -1,0 +1,16 @@
+
+client
+
+client.dSYM/Contents/Info.plist
+
+*.xml
+
+*.properties
+
+nbproject/private/Default-build.log
+
+nbproject/private/Default-exec.log
+
+server
+
+*.plist
