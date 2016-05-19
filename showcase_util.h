@@ -4,11 +4,13 @@
 #include "lib.h"
 
 typedef struct {
-    int id;
-    char* author;
-    char* password;
-    char* text;
-    time_t date;
+    int id;	//4 byte
+    char author[30]; //30 byte
+    char password[30]; //30 byte
+    char object[100]; //100 byte
+    char text[3800]; //3800 byte
+    time_t date; //8 byte
+    //+ 80 byte to transmit on socket
 } post;
 
 typedef struct showcase_node{
@@ -20,10 +22,10 @@ showcase* bacheca;
 
 
 //add new post into the showcase
-void insert_post(char* author, char* password, char* text);
+int insert_post(char author[], char object[], char text[], char password[]);
 
 //delete post from showcase
-void delete_post(int id, char* password, char* username);
+char* delete_post(int id, char password[], char username[]);
 
 //print the showcase
 void print_showcase();

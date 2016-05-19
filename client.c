@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
 
     if (DEBUG) fprintf(stderr, "Connection established!\n");
 
-    char buf[1024];
+    char buf[4096];
     int buf_len = sizeof(buf);
     int msg_len;
 
@@ -58,13 +58,21 @@ int main(int argc, char* argv[]) {
     buf[msg_len] = '\0';
     printf("%s", buf);
 
-    //get and send username
-    if (fgets(buf, sizeof(buf), stdin) != (char*)buf) {
-        fprintf(stderr, "Error while reading from stdin, exiting...\n");            
-        exit(EXIT_FAILURE);
-    }
-    msg_len = strlen(buf);
-    buf[--msg_len] = '\0'; // remove '\n' from the end of the message
+    while(1)    {
+        //get and send username
+        if (fgets(buf, sizeof(buf), stdin) != (char*)buf) {
+            fprintf(stderr, "Error while reading from stdin, exiting...\n");            
+            exit(EXIT_FAILURE);
+        }
+        msg_len = strlen(buf);
+        buf[--msg_len] = '\0'; // remove '\n' from the end of the message
+
+        //check if > 9
+        if (strlen(buf) > 0 && strlen(buf) < 9) {
+            break;
+        }
+        printf("Error: too many characters in the username! Try again: ");
+    }   
 
     // send username to server
     while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0) {

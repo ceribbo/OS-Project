@@ -13,17 +13,16 @@
 
 //send the showcase to the client
 void send_showcase(int socket_desc)	{
-	char buf[1024];
+	char buf[4096];
     int msg_len;
-    int buf_len = sizeof(buf);
     int ret, recv_bytes;
 
 	if (!empty_showcase())	{
 		showcase* punt = bacheca;
 		while (punt != NULL) {
 			//write post into buffer
-			sprintf(buf, "*---------------------------------------\n*Time: %s*Author: %s\n*Text: %s\n*ID: %d\n",
-				ctime(&(punt->element.date)), punt->element.author, punt->element.text, punt->element.id);
+			sprintf(buf, "Time: %sAuthor: %s\nObject: %s\nText: %s\nID: %d\n", 
+				ctime(&(punt->element.date)), punt->element.author, punt->element.object, punt->element.text, punt->element.id);
 			//send post
 		    msg_len = strlen(buf);
 		    while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0 ) {
@@ -47,7 +46,7 @@ void send_showcase(int socket_desc)	{
 	        ERROR_HELPER(-1, "Cannot write to the socket");
 	    }
 	    // wait for client's ACK  
-	    while ( (recv_bytes = recv(socket_desc, buf, buf_len, 0)) < 0 ) {
+	    while ( (recv_bytes = recv(socket_desc, buf, 3, 0)) < 0 ) {
 	        if (errno == EINTR) continue;
 	        ERROR_HELPER(-1, "Cannot read from socket");
 	    } 
@@ -67,14 +66,13 @@ void send_showcase(int socket_desc)	{
 
 //receive the showcase from the server
 void recv_showcase(int socket_desc)	{
-	char buf[1024];
+	char buf[4096];
 	int msg_len;
     int buf_len = sizeof(buf);
     int ret;
 
 	printf("**************************************************************************************\n");
 	while (1)	{
-
 		// read message from server
         while ( (msg_len = recv(socket_desc, buf, buf_len, 0)) < 0 ) {
             if (errno == EINTR) continue;
@@ -94,6 +92,7 @@ void recv_showcase(int socket_desc)	{
 	    buf[msg_len] = '\0';
 
 	    printf("%s", buf);
+	    printf("--------------------------------------------------------------------------------------\n");
 	}
 	printf("**************************************************************************************\n");
 	return;
@@ -101,22 +100,27 @@ void recv_showcase(int socket_desc)	{
 
 //send new post
 void send_post(int socket_desc)	{
-	char buf[1024];
+	char buf[4096];
 	int msg_len = 0;
 	int ret;
 
-	//get text for new post
-	printf("Insert text of the post: ");
+	while (1)	{
+		//get object for new post
+		printf("Insert object of the post (max 50 characters): ");
 
-    if (fgets(buf, sizeof(buf), stdin) != (char*)buf) {
-        fprintf(stderr, "Error while reading from stdin, exiting...\n");
-        exit(EXIT_FAILURE);
-    }
+	    if (fgets(buf, sizeof(buf), stdin) != (char*)buf) {
+	        fprintf(stderr, "Error while reading from stdin, exiting...\n");
+	        exit(EXIT_FAILURE);
+	    }
 
-    //send text for new post
-    msg_len = strlen(buf);
-    buf[--msg_len] = '\0'; // remove '\n' from the end of the message
-
+	    //send object for new post
+	    msg_len = strlen(buf);
+	    buf[--msg_len] = '\0'; // remove '\n' from the end of the message
+	    if (strlen(buf) > 0 && strlen(buf) < 50)	{
+	    	break;
+	    }
+	    printf("Error: too many characters!\n");
+	}
     while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0) {
     	if (errno == EINTR) continue;
         ERROR_HELPER(-1, "Cannot write to socket");
@@ -128,17 +132,51 @@ void send_post(int socket_desc)	{
 	    ERROR_HELPER(-1, "Cannot read from socket");
 	}
 
-	//get password for new post
-    printf("Insert password for post: ");
+	while (1)	{
+		//get text for new post
+		printf("Insert text of the post (max 1900 characters): ");
 
-    if (fgets(buf, sizeof(buf), stdin) != (char*)buf) {
-        fprintf(stderr, "Error while reading from stdin, exiting...\n");
-        exit(EXIT_FAILURE);
+	    if (fgets(buf, sizeof(buf), stdin) != (char*)buf) {
+	        fprintf(stderr, "Error while reading from stdin, exiting...\n");
+	        exit(EXIT_FAILURE);
+	    }
+
+	    //send text for new post
+	    msg_len = strlen(buf);
+	    buf[--msg_len] = '\0'; // remove '\n' from the end of the message
+	    if (strlen(buf) > 0 && strlen(buf) < 1900)	{
+	    	break;
+	    }
+	    printf("Error: too many characters!\n");
+	}
+    while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0) {
+    	if (errno == EINTR) continue;
+        ERROR_HELPER(-1, "Cannot write to socket");
     }
 
-    //send text for new post
-    msg_len = strlen(buf);
-    buf[--msg_len] = '\0'; // remove '\n' from the end of the message
+    // wait for server's ACK  
+	while ( (msg_len = recv(socket_desc, buf, 3, 0)) < 0 ) {
+	    if (errno == EINTR) continue;
+	    ERROR_HELPER(-1, "Cannot read from socket");
+	}
+
+	while (1)	{
+		//get password for new post
+	    printf("Insert password for post (max 15 characters): ");
+
+	    if (fgets(buf, sizeof(buf), stdin) != (char*)buf) {
+	        fprintf(stderr, "Error while reading from stdin, exiting...\n");
+	        exit(EXIT_FAILURE);
+	    }
+
+	    //send text for new post
+	    msg_len = strlen(buf);
+	    buf[--msg_len] = '\0'; // remove '\n' from the end of the message
+	    if (strlen(buf) > 0 && strlen(buf) < 15)	{
+	    	break;
+	    }
+	    printf("Error: too many characters!\n");
+	}
     
     while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0) {
     	if (errno == EINTR) continue;
@@ -153,21 +191,34 @@ void send_post(int socket_desc)	{
 	return;
 }
 
-void recv_post(int socket_desc, char username[])	{
-	char buf[1024];
+void recv_post(int socket_desc, char* username)	{
+	char buf[4096];
     int buf_len = sizeof(buf);
     int ret, recv_bytes;
-    char text[1024];
+    char object[100];
+    char text[3800];
     char password[30];
 
-	// wait for text of the new post  
+	// wait for object of the new post  
+	while ( (recv_bytes = recv(socket_desc, object, buf_len, 0)) < 0 ) {
+	    if (errno == EINTR) continue;
+	    ERROR_HELPER(-1, "Cannot read from socket");
+	}
+	object[recv_bytes] = '\0';
+	
+	//send ACK to client to confirm
+	while ( (ret = send(socket_desc, "ACK", 3, 0)) < 0) {
+        if (errno == EINTR) continue;
+        ERROR_HELPER(-1, "Cannot write to socket");
+    }
+
+    // wait for text of the new post  
 	while ( (recv_bytes = recv(socket_desc, text, buf_len, 0)) < 0 ) {
 	    if (errno == EINTR) continue;
 	    ERROR_HELPER(-1, "Cannot read from socket");
 	}
 	text[recv_bytes] = '\0';
 	
-
 	//send ACK to client to confirm
 	while ( (ret = send(socket_desc, "ACK", 3, 0)) < 0) {
         if (errno == EINTR) continue;
@@ -188,10 +239,14 @@ void recv_post(int socket_desc, char username[])	{
     }
 
     //create the new post
-    insert_post(password, text, username);
+    if (insert_post(username, object, text, password))	{
+    	//send succesfully message to client
+    	strcpy(buf, "New post succesfully added to the showcase\0");
+    }else{
+    	//send unsuccesfully message to client
+    	strcpy(buf, "Error: new post hasn't been added to the showcase\0");
+    }
 
-    //send succesfully message to client
-    strcpy(buf, "New post succesfully added to the showcase\0");
     buf_len = strlen(buf);
     while ( (ret = send(socket_desc, buf, buf_len+1, 0)) < 0 ) {
         if (errno == EINTR) continue;
@@ -288,12 +343,10 @@ void recv_delete(int socket_desc, char username[])	{
         if (errno == EINTR) continue;
         ERROR_HELPER(-1, "Cannot write to socket");
     }
+    
+	//send deleted message
+	strcpy(buf, delete_post(id, password, username));
 
-    //delete the post
-    delete_post(id, password, username);
-
-    //send succesfully deleted message
-    strcpy(buf, "Post succesfully deleted from showcase\0");
     buf_len = strlen(buf);
     while ( (ret = send(socket_desc, buf, buf_len+1, 0)) < 0 ) {
         if (errno == EINTR) continue;

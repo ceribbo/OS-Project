@@ -54,7 +54,7 @@ void* connection_handler(void* arg) {
     //uint16_t client_port = ntohs(client_addr->sin_port); // port number is an unsigned short
 
     // send welcome message
-    sprintf(buf, "Hi! This is a showcase server. Please insert your username: ");
+    sprintf(buf, "Hi! This is a showcase server. Please insert your username (max 9 chars): ");
 
         /*You are %s talking on port %hu.\nI will send you back whatever"
             " you send me. I will stop if you send me %s :-)\n", client_ip, client_port, quit_command);*/
@@ -70,10 +70,6 @@ void* connection_handler(void* arg) {
         ERROR_HELPER(-1, "Cannot read from socket");
     }
     username[recv_bytes] = '\0';
-
-
-    insert_post("edu", "password1", "testo1"); 
-    insert_post(username, "password", "testo");
 
     //int username_len = strlen(buf);
     //char username[username_len] = buf;
@@ -135,13 +131,7 @@ void* connection_handler(void* arg) {
     ERROR_HELPER(ret, "Cannot close socket for incoming connection");
 
     
-    /** COMPLETE CODE HERE
-     *
-     * Suggestions
-     * - free memory allocated for this thread inside the main thread
-     * - print a debug message to inform the user that the thread has
-     *   completed its work
-     */
+    
     if (DEBUG) fprintf(stderr, "Thread created to handle the request has completed.\n");
 
     free(args->client_addr); // do not forget to free this buffer!
@@ -150,9 +140,11 @@ void* connection_handler(void* arg) {
 }
 
 int main(int argc, char* argv[]) {
-
     //post* bacheca = NULL;
     //bacheca = NULL;
+
+    insert_post("edu", "oggettoEDU", "testoEDU", "password"); 
+    insert_post("ceribbo", "oggettoCE", "testoCE", "password");
     //delete_post(1,"password","ceribbo");
     //bacheca = insert_post(bacheca, "utente3", "pass", "questo è il teto che vorrei inserire nel campo testo");
     //print_showcase(bacheca);
