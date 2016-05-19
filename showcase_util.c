@@ -13,14 +13,17 @@
 
 
 int empty_showcase()	{
-    if(bacheca==NULL) {
-    	return 1;
-    	printf("BACHECA è VUOTA\n");
-    } else return 0;
+	int var;
+	printf("qui ci arribo\n");
+	semaphore_wait();
+    if(bacheca==NULL) {printf("qui ci arrivo 2"); var = 1;}
+    else var = 0;
+	semaphore_post();
+	return var;
 }
 
 int insert_post(char username[], char object[], char text[], char password[])	{
-
+	int ret = 0;
 	//create new element
     showcase* new_element = (showcase*)malloc(sizeof(showcase));
     showcase* punt;
@@ -37,6 +40,9 @@ int insert_post(char username[], char object[], char text[], char password[])	{
     strcpy(post_element.password, password);
     post_element.date = time(NULL);
 
+	
+	semaphore_wait();
+    printf("arrivo\n");
     if(empty_showcase())	{
     	//if showcase is null
     	post_element.id = 0;
@@ -45,7 +51,8 @@ int insert_post(char username[], char object[], char text[], char password[])	{
     	new_element->element = post_element;
     	new_element->next = NULL;
         bacheca=new_element;
-        return 1;
+        printf("POST = %d - ADDED BY %s\n", post_element.id, username);
+        ret = 1;
     } else {
     	//add at the end of list
         punt=bacheca;
@@ -58,18 +65,22 @@ int insert_post(char username[], char object[], char text[], char password[])	{
     	new_element->next = NULL;
 
         punt->next = new_element;
-        return 1;
+        printf("POST = %d - ADDED BY %s\n", post_element.id, username);
+        ret = 1;
     }
-    return 0;
+	semaphore_post();
+    return ret;
 }
 
 char* delete_post(int id, char password[], char username[])	{
 
 	if (!empty_showcase())	{
+		
 		//create new element
 	    showcase* punt;
 	    showcase* previous;
 
+		semaphore_wait();
 	    punt=bacheca;
 	    while(punt!=NULL)	{
 	    	if (punt->element.id == id)	{
@@ -77,31 +88,41 @@ char* delete_post(int id, char password[], char username[])	{
 	    			if (strlen(punt->element.password) == strlen(password) && !memcmp(punt->element.password, password, strlen(password))) {
 		    			if (punt == bacheca)	{
 		    				bacheca = punt->next;
-	    					return "Post succesfully deleted from showcase.";
+		    				printf("POST = %d - DELETED BY %s\n", id, username);
+							semaphore_post();
+	    					return "POST SUCCESFULLY DELETED FROM SHOWCASE";
 		    			}else{
 		    				previous->next = punt->next;
-		    				free(previous);
-	    					return "Post succesfully deleted from showcase.";
+		    				free(punt);
+		    				printf("POST = %d - DELETED BY %s\n", id, username);
+							semaphore_post();
+	    					return "POST SUCCESFULLY DELETED FROM SHOWCASE";
 		    			}
 		    		}else{
-		    			return "Error: password was incorrect.";
+						semaphore_post();
+		    			return "PASSWORD WAS NOT CORRECT";
 		    		}
 		    	}else{
-					return "Error: post was not created by you. You can't delete it.";
+					semaphore_post();
+					return "POST WAS NOT CREATED BY YOU. YOU CAN'T DELETE IT";
 		    	}
 	    	}
 	    	previous = punt;
 	        punt = punt->next;     
 	    }
-	    return "Error: wrong ID, post not found.";
+		semaphore_post();
+	    return "WRONG ID, POST NOT FOUND";
 	}
-	return "Error: the showcase is empty";
+	semaphore_post();
+	return "THE SHOWCASE IS EMPTY";
 }
 
 void print_showcase()	{	
 
 	printf("**************************************************************************************\n");
-	if (!empty_showcase())	{    
+	if (!empty_showcase())	{
+
+		semaphore_wait();
 		showcase* punt = bacheca;
 		while(punt != NULL)	{
 
@@ -116,12 +137,32 @@ void print_showcase()	{
 	        punt=punt->next;
 
 	    }
+		semaphore_post();
 	}else{
 		printf("Showcase is empty.\n");
 	}
 	printf("**************************************************************************************\n");
 
 	return;
+}
+
+//call sem_wait
+void semaphore_wait()	{
+	int ret;
+	if ((ret = sem_wait(semaphore)))	{
+	    printf("Can't make sem_post\n");
+	    exit(1);
+	}
+    printf("ARRIVOOOOOO\n");
+}
+
+//call sem_post
+void semaphore_post()	{
+	int ret;
+	if ((ret = sem_post(semaphore)))	{
+	    printf("Can't make sem_post\n");
+	    exit(1);
+	}
 }
 
 

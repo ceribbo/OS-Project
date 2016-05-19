@@ -60,7 +60,6 @@ void send_showcase(int socket_desc)	{
         ERROR_HELPER(-1, "Cannot write to the socket");
 	}
 
-	print_showcase();
 	return;
 }
 
@@ -72,6 +71,7 @@ void recv_showcase(int socket_desc)	{
     int ret;
 
 	printf("**************************************************************************************\n");
+	printf("--------------------------------------------------------------------------------------\n");
 	while (1)	{
 		// read message from server
         while ( (msg_len = recv(socket_desc, buf, buf_len, 0)) < 0 ) {
@@ -241,10 +241,10 @@ void recv_post(int socket_desc, char* username)	{
     //create the new post
     if (insert_post(username, object, text, password))	{
     	//send succesfully message to client
-    	strcpy(buf, "New post succesfully added to the showcase\0");
+    	strcpy(buf, "NEW POST SUCCESFULLY ADDED TO THE SHOWCASE.\0");
     }else{
     	//send unsuccesfully message to client
-    	strcpy(buf, "Error: new post hasn't been added to the showcase\0");
+    	strcpy(buf, "NEW POST HAS NOT BEEN ADDED TO THE SHOWCASE\0");
     }
 
     buf_len = strlen(buf);

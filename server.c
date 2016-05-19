@@ -88,8 +88,6 @@ void* connection_handler(void* arg) {
     send_showcase(socket_desc);
     // echo loop
     while (1) {
-        //print_showcase();
-        //printf("**************************************CICLO************************************\n");
         // read message from client
         while ( (recv_bytes = recv(socket_desc, buf, buf_len, 0)) < 0 ) {
             if (errno == EINTR) continue;
@@ -114,7 +112,7 @@ void* connection_handler(void* arg) {
         }
         //error: command not found
         else {
-            strcpy(buf, "Error: command not found\0");
+            strcpy(buf, "COMMAND NOT FOUND\0");
             msg_len = strlen(buf);
             while ( (ret = send(socket_desc, buf, msg_len+1, 0)) < 0 ) {
                 if (errno == EINTR) continue;
@@ -129,8 +127,6 @@ void* connection_handler(void* arg) {
     // close socket
     ret = close(socket_desc);
     ERROR_HELPER(ret, "Cannot close socket for incoming connection");
-
-    
     
     if (DEBUG) fprintf(stderr, "Thread created to handle the request has completed.\n");
 
@@ -140,21 +136,16 @@ void* connection_handler(void* arg) {
 }
 
 int main(int argc, char* argv[]) {
-    //post* bacheca = NULL;
-    //bacheca = NULL;
 
-    insert_post("edu", "oggettoEDU", "testoEDU", "password"); 
-    insert_post("ceribbo", "oggettoCE", "testoCE", "password");
-    //delete_post(1,"password","ceribbo");
-    //bacheca = insert_post(bacheca, "utente3", "pass", "questo è il teto che vorrei inserire nel campo testo");
-    //print_showcase(bacheca);
-    //bacheca = delete_post(bacheca, 0, "password1");
-    //print_showcase(bacheca);
-
-    
-    
     int ret;
 
+    // Initialize a semaphore 
+    if ((semaphore = sem_open("semaphore", O_CREAT, 0644, 1)) == SEM_FAILED ) {
+        printf("Error: semaphore not opened\n");
+        exit(EXIT_FAILURE);
+    }
+    insert_post("edu", "oggettoEDU", "testoEDU", "password"); 
+    insert_post("ceribbo", "oggettoCE", "testoCE", "password");
     int socket_desc, client_desc;
 
     // some fields are required to be filled with 0
@@ -208,6 +199,16 @@ int main(int argc, char* argv[]) {
         if (DEBUG) fprintf(stderr, "New thread created to handle the request!\n");
         pthread_detach(thread);
         client_addr = calloc(1, sizeof(struct sockaddr_in));
+    }
+
+    if (sem_close(semaphore) == -1) {
+        printf("Error closing the semaphore\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (sem_unlink("/semaphore") == -1) {
+        printf("Error unlinking the semaphore\n");
+        exit(EXIT_FAILURE);
     }
 
     exit(EXIT_SUCCESS); // this will never be executed

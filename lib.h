@@ -1,6 +1,9 @@
 #ifndef LIB_H
 #define LIB_H
 
+
+#include <semaphore.h>
+
 #include "showcase_util.h"
 #include "socket_util.h"
 
