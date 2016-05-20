@@ -18,6 +18,7 @@ void send_showcase(int socket_desc)	{
     int ret, recv_bytes;
 
 	if (!empty_showcase())	{
+		semaphore_wait();
 		showcase* punt = bacheca;
 		while (punt != NULL) {
 			//write post into buffer
@@ -37,6 +38,7 @@ void send_showcase(int socket_desc)	{
 	        } 
         	punt = punt->next;
 	    }
+	    semaphore_post();
 	}else{
 		//the showcase is empty....
 		sprintf(buf, "Hi! Unfortunately there are no posts on the showcase.\n");

@@ -74,7 +74,7 @@ void* connection_handler(void* arg) {
     //int username_len = strlen(buf);
     //char username[username_len] = buf;
     //char *username = buf;
-    printf("%s has just connected!\n", username);
+    printf("CLIENT = %s - HAS JUST CONNECTED\n", username);
 
     //send instructions to client
     sprintf(buf, "Hi %s! Here it is the showcase:\n",username);
@@ -138,14 +138,18 @@ void* connection_handler(void* arg) {
 int main(int argc, char* argv[]) {
 
     int ret;
-
+    sem_close(semaphore);
+    sem_unlink(SEM_NAME);
     // Initialize a semaphore 
-    if ((semaphore = sem_open("semaphore", O_CREAT, 0644, 1)) == SEM_FAILED ) {
+    if ((semaphore = sem_open(SEM_NAME, O_CREAT, 0666, 1)) == SEM_FAILED ) {
         printf("Error: semaphore not opened\n");
         exit(EXIT_FAILURE);
     }
+
+    //test***********************************
     insert_post("edu", "oggettoEDU", "testoEDU", "password"); 
     insert_post("ceribbo", "oggettoCE", "testoCE", "password");
+    //fineTest*******************************
     int socket_desc, client_desc;
 
     // some fields are required to be filled with 0
@@ -185,8 +189,6 @@ int main(int argc, char* argv[]) {
         if (client_desc == -1 && errno == EINTR) continue; // check for interruption by signals
         ERROR_HELPER(client_desc, "Cannot open socket for incoming connection");
 
-        if (DEBUG) fprintf(stderr, "Incoming connection accepted...\n");
-
         pthread_t thread;
         handler_args_t* thread_args = malloc(sizeof(handler_args_t));
         thread_args->socket_desc = client_desc;
@@ -196,7 +198,6 @@ int main(int argc, char* argv[]) {
             fprintf(stderr, "Can't create a new thread, error %d\n", errno);
             exit(EXIT_FAILURE);
         }
-        if (DEBUG) fprintf(stderr, "New thread created to handle the request!\n");
         pthread_detach(thread);
         client_addr = calloc(1, sizeof(struct sockaddr_in));
     }
@@ -206,7 +207,7 @@ int main(int argc, char* argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    if (sem_unlink("/semaphore") == -1) {
+    if (sem_unlink(SEM_NAME) == -1) {
         printf("Error unlinking the semaphore\n");
         exit(EXIT_FAILURE);
     }

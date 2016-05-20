@@ -44,8 +44,6 @@ int main(int argc, char* argv[]) {
     ret = connect(socket_desc, (struct sockaddr*) &server_addr, sizeof(struct sockaddr_in));
     ERROR_HELPER(ret, "Could not create connection");
 
-    if (DEBUG) fprintf(stderr, "Connection established!\n");
-
     char buf[4096];
     int buf_len = sizeof(buf);
     int msg_len;
@@ -96,9 +94,10 @@ int main(int argc, char* argv[]) {
     while (1) {
         printf("****************CONSOLE****************\n");
         printf("*Type: \n");
-        printf("*-new: to create a new post\n");
-        printf("*-delete: to delete one of your posts\n");
-        printf("*-show: to show the showcase\n");
+        printf("*-%s: to create a new post\n", new_command);
+        printf("*-%s: to delete one of your posts\n", delete_command);
+        printf("*-%s: to show the showcase\n", show_command);
+        printf("*-%s: to quit\n", quit_command);
         printf("*COMMAND: ");
 
         /* Read a line from stdin

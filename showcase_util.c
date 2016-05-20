@@ -14,9 +14,8 @@
 
 int empty_showcase()	{
 	int var;
-	printf("qui ci arribo\n");
 	semaphore_wait();
-    if(bacheca==NULL) {printf("qui ci arrivo 2"); var = 1;}
+    if(bacheca==NULL) var = 1; 
     else var = 0;
 	semaphore_post();
 	return var;
@@ -41,9 +40,8 @@ int insert_post(char username[], char object[], char text[], char password[])	{
     post_element.date = time(NULL);
 
 	
-	semaphore_wait();
-    printf("arrivo\n");
     if(empty_showcase())	{
+		semaphore_wait();
     	//if showcase is null
     	post_element.id = 0;
 
@@ -54,6 +52,7 @@ int insert_post(char username[], char object[], char text[], char password[])	{
         printf("POST = %d - ADDED BY %s\n", post_element.id, username);
         ret = 1;
     } else {
+		semaphore_wait();
     	//add at the end of list
         punt=bacheca;
         while(punt->next!=NULL)	{
@@ -148,20 +147,27 @@ void print_showcase()	{
 
 //call sem_wait
 void semaphore_wait()	{
-	int ret;
-	if ((ret = sem_wait(semaphore)))	{
-	    printf("Can't make sem_post\n");
-	    exit(1);
+	if (sem_wait(semaphore) == -1)	{
+		sem_close(semaphore);
+		sem_unlink(SEM_NAME);
+		semaphore = sem_open(SEM_NAME, O_CREAT | O_EXCL, 0666, 1);
+		if (semaphore == SEM_FAILED)	{
+	    	printf("Can't make sem_wait\n");
+		}
+		sem_wait(semaphore);
 	}
-    printf("ARRIVOOOOOO\n");
 }
 
 //call sem_post
 void semaphore_post()	{
-	int ret;
-	if ((ret = sem_post(semaphore)))	{
-	    printf("Can't make sem_post\n");
-	    exit(1);
+	if (sem_post(semaphore) == -1)	{
+	    sem_close(semaphore);
+		sem_unlink(SEM_NAME);
+		semaphore = sem_open(SEM_NAME, O_CREAT | O_EXCL, 0666, 1);
+		if (semaphore == SEM_FAILED)	{
+	    	printf("Can't make sem_post\n");
+		}
+		sem_post(semaphore);
 	}
 }
 

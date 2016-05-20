@@ -21,9 +21,10 @@
 #define MAX_CONN_QUEUE  3   // max number of connections the server can queue
 #define SERVER_ADDRESS  "127.0.0.1"
 #define SERVER_QUIT_COMMAND  "QUIT"
-#define SERVER_NEW_COMMAND "new"
-#define SERVER_DELETE_COMMAND "delete"
-#define SERVER_SHOW_COMMAND "show"
+#define SERVER_NEW_COMMAND "NEW"
+#define SERVER_DELETE_COMMAND "DELETE"
+#define SERVER_SHOW_COMMAND "SHOW"
 #define SERVER_PORT     2187
+#define SEM_NAME "semaphore"
 
 #endif
