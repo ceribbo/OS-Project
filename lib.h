@@ -1,12 +1,28 @@
 #ifndef LIB_H
 #define LIB_H
 
-
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+#include <time.h>
+#include <unistd.h>
+#include <arpa/inet.h> 
+#include <netinet/in.h> 
+#include <sys/socket.h>
 #include <semaphore.h>
+
+
+//client thread structure
+typedef struct handler_args_s {
+    int socket_desc;
+    struct sockaddr_in* client_addr;
+} handler_args_t;
 
 #include "showcase_util.h"
 #include "socket_util.h"
-
+#include "thread.h"
 
 // macro to simplify error handling
 #define ERROR_HELPER(ret, message)  do {                                \

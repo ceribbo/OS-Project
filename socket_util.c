@@ -1,21 +1,17 @@
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <time.h>
-#include <unistd.h>
-#include <arpa/inet.h>  // htons()
-#include <netinet/in.h> // struct sockaddr_in
-#include <sys/socket.h>
-
 #include "socket_util.h"
 
+//check if error from socket
+int sock_error(int sock_bytes)	{
+	if (sock_bytes <= 0) return 1;
+	return 0;
+}
+
+
 //send the showcase to the client
-void send_showcase(int socket_desc)	{
+int send_showcase(int socket_desc)	{
 	char buf[4096];
     int msg_len;
-    int ret, recv_bytes;
+    int ret, recv_bytes, err = 0;
 
 	if (!empty_showcase())	{
 		semaphore_wait();
@@ -28,45 +24,53 @@ void send_showcase(int socket_desc)	{
 		    msg_len = strlen(buf);
 		    while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0 ) {
 		        if (errno == EINTR) continue;
-		        ERROR_HELPER(-1, "Cannot write to the socket");
 		    }
+    		if (sock_error(ret)) {
+    			err = 1;
+    			break;
+    		}
 
 	        // wait for client's ACK  
 	        while ( (recv_bytes = recv(socket_desc, buf, 3, 0)) < 0 ) {
 	            if (errno == EINTR) continue;
-	            ERROR_HELPER(-1, "Cannot read from socket");
-	        } 
+	        }
+    		if (sock_error(recv_bytes)) {
+    			err = 1;
+    			break;
+    		} 
         	punt = punt->next;
 	    }
 	    semaphore_post();
+		if (err) return 0;
 	}else{
 		//the showcase is empty....
-		sprintf(buf, "Hi! Unfortunately there are no posts on the showcase.\n");
+		sprintf(buf, "Unfortunately there are no posts on the showcase.\n");
 		msg_len = strlen(buf);
 	    while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0 ) {
 	        if (errno == EINTR) continue;
-	        ERROR_HELPER(-1, "Cannot write to the socket");
 	    }
+    	if (sock_error(ret)) return 0;
+
 	    // wait for client's ACK  
 	    while ( (recv_bytes = recv(socket_desc, buf, 3, 0)) < 0 ) {
 	        if (errno == EINTR) continue;
-	        ERROR_HELPER(-1, "Cannot read from socket");
 	    } 
+    	if (sock_error(recv_bytes)) return 0;
 	}
-	
+
 	//send finished command
 	sprintf(buf,"finished");
 	msg_len = strlen(buf);
 	while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0 ) {
 		if (errno == EINTR) continue;
-        ERROR_HELPER(-1, "Cannot write to the socket");
 	}
+    if (sock_error(ret)) return 0;
 
-	return;
+	return 1;
 }
 
 //receive the showcase from the server
-void recv_showcase(int socket_desc)	{
+int recv_showcase(int socket_desc)	{
 	char buf[4096];
 	int msg_len;
     int buf_len = sizeof(buf);
@@ -78,8 +82,8 @@ void recv_showcase(int socket_desc)	{
 		// read message from server
         while ( (msg_len = recv(socket_desc, buf, buf_len, 0)) < 0 ) {
             if (errno == EINTR) continue;
-            ERROR_HELPER(-1, "Cannot read from socket");
         }
+    	if (sock_error(msg_len)) return 0;
 
         //check if the showcase is finished
         if (msg_len == 8 && !memcmp(buf, "finished", 8)) 	{
@@ -89,19 +93,19 @@ void recv_showcase(int socket_desc)	{
         //send ACK to server to confirm
 		while ( (ret = send(socket_desc, "ACK", 3, 0)) < 0) {
             if (errno == EINTR) continue;
-            ERROR_HELPER(-1, "Cannot write to socket");
         }
+    	if (sock_error(ret)) return 0;
 	    buf[msg_len] = '\0';
 
 	    printf("%s", buf);
 	    printf("--------------------------------------------------------------------------------------\n");
 	}
 	printf("**************************************************************************************\n");
-	return;
+	return 1;
 }
 
 //send new post
-void send_post(int socket_desc)	{
+int send_post(int socket_desc)	{
 	char buf[4096];
 	int msg_len = 0;
 	int ret;
@@ -112,27 +116,27 @@ void send_post(int socket_desc)	{
 
 	    if (fgets(buf, sizeof(buf), stdin) != (char*)buf) {
 	        fprintf(stderr, "Error while reading from stdin, exiting...\n");
-	        exit(EXIT_FAILURE);
+	        return 0;
 	    }
 
 	    //send object for new post
 	    msg_len = strlen(buf);
 	    buf[--msg_len] = '\0'; // remove '\n' from the end of the message
-	    if (strlen(buf) > 0 && strlen(buf) < 50)	{
+	    if (strlen(buf) > 0 && strlen(buf) <= 50)	{
 	    	break;
 	    }
 	    printf("Error: too many characters!\n");
 	}
     while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0) {
     	if (errno == EINTR) continue;
-        ERROR_HELPER(-1, "Cannot write to socket");
     }
+    if (sock_error(ret)) return 0;
 
     // wait for server's ACK  
 	while ( (msg_len = recv(socket_desc, buf, 3, 0)) < 0 ) {
 	    if (errno == EINTR) continue;
-	    ERROR_HELPER(-1, "Cannot read from socket");
 	}
+    if (sock_error(msg_len)) return 0;
 
 	while (1)	{
 		//get text for new post
@@ -146,21 +150,21 @@ void send_post(int socket_desc)	{
 	    //send text for new post
 	    msg_len = strlen(buf);
 	    buf[--msg_len] = '\0'; // remove '\n' from the end of the message
-	    if (strlen(buf) > 0 && strlen(buf) < 1900)	{
+	    if (strlen(buf) > 0 && strlen(buf) <= 1900)	{
 	    	break;
 	    }
 	    printf("Error: too many characters!\n");
 	}
     while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0) {
     	if (errno == EINTR) continue;
-        ERROR_HELPER(-1, "Cannot write to socket");
     }
+    if (sock_error(ret)) return 0;
 
     // wait for server's ACK  
 	while ( (msg_len = recv(socket_desc, buf, 3, 0)) < 0 ) {
 	    if (errno == EINTR) continue;
-	    ERROR_HELPER(-1, "Cannot read from socket");
 	}
+    if (sock_error(msg_len)) return 0;
 
 	while (1)	{
 		//get password for new post
@@ -168,13 +172,13 @@ void send_post(int socket_desc)	{
 
 	    if (fgets(buf, sizeof(buf), stdin) != (char*)buf) {
 	        fprintf(stderr, "Error while reading from stdin, exiting...\n");
-	        exit(EXIT_FAILURE);
+	        return 0;
 	    }
 
 	    //send text for new post
 	    msg_len = strlen(buf);
 	    buf[--msg_len] = '\0'; // remove '\n' from the end of the message
-	    if (strlen(buf) > 0 && strlen(buf) < 15)	{
+	    if (strlen(buf) > 0 && strlen(buf) <= 15)	{
 	    	break;
 	    }
 	    printf("Error: too many characters!\n");
@@ -182,18 +186,18 @@ void send_post(int socket_desc)	{
     
     while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0) {
     	if (errno == EINTR) continue;
-        ERROR_HELPER(-1, "Cannot write to socket");
     }
+    if (sock_error(ret)) return 0;
 
     // wait for server's ACK  
 	while ( (msg_len = recv(socket_desc, buf, 3, 0)) < 0 ) {
 	    if (errno == EINTR) continue;
-	    ERROR_HELPER(-1, "Cannot read from socket");
-	}	
-	return;
+	}
+    if (sock_error(ret)) return 0;	
+	return 1;
 }
 
-void recv_post(int socket_desc, char* username)	{
+int recv_post(int socket_desc, char* username)	{
 	char buf[4096];
     int buf_len = sizeof(buf);
     int ret, recv_bytes;
@@ -202,43 +206,43 @@ void recv_post(int socket_desc, char* username)	{
     char password[30];
 
 	// wait for object of the new post  
-	while ( (recv_bytes = recv(socket_desc, object, buf_len, 0)) < 0 ) {
+	while ( (recv_bytes = recv(socket_desc, object, sizeof(object), 0)) < 0 ) {
 	    if (errno == EINTR) continue;
-	    ERROR_HELPER(-1, "Cannot read from socket");
 	}
+	if (sock_error(recv_bytes)) return 0;
 	object[recv_bytes] = '\0';
 	
 	//send ACK to client to confirm
 	while ( (ret = send(socket_desc, "ACK", 3, 0)) < 0) {
         if (errno == EINTR) continue;
-        ERROR_HELPER(-1, "Cannot write to socket");
     }
+	if (sock_error(ret)) return 0;
 
     // wait for text of the new post  
-	while ( (recv_bytes = recv(socket_desc, text, buf_len, 0)) < 0 ) {
+	while ( (recv_bytes = recv(socket_desc, text, sizeof(text), 0)) < 0 ) {
 	    if (errno == EINTR) continue;
-	    ERROR_HELPER(-1, "Cannot read from socket");
 	}
+	if (sock_error(recv_bytes)) return 0;
 	text[recv_bytes] = '\0';
 	
 	//send ACK to client to confirm
 	while ( (ret = send(socket_desc, "ACK", 3, 0)) < 0) {
         if (errno == EINTR) continue;
-        ERROR_HELPER(-1, "Cannot write to socket");
     }
+	if (sock_error(ret)) return 0;
 
     // wait for password for the new post  
-	while ( (recv_bytes = recv(socket_desc, password, buf_len, 0)) < 0 ) {
+	while ( (recv_bytes = recv(socket_desc, password, sizeof(password), 0)) < 0 ) {
 	    if (errno == EINTR) continue;
-	    ERROR_HELPER(-1, "Cannot read from socket");
 	}
+	if (sock_error(recv_bytes)) return 0;
 	password[recv_bytes] = '\0';
 
 	//send ACK to client to confirm
 	while ( (ret = send(socket_desc, "ACK", 3, 0)) < 0) {
         if (errno == EINTR) continue;
-        ERROR_HELPER(-1, "Cannot write to socket");
     }
+	if (sock_error(ret)) return 0;
 
     //create the new post
     if (insert_post(username, object, text, password))	{
@@ -252,13 +256,13 @@ void recv_post(int socket_desc, char* username)	{
     buf_len = strlen(buf);
     while ( (ret = send(socket_desc, buf, buf_len+1, 0)) < 0 ) {
         if (errno == EINTR) continue;
-        ERROR_HELPER(-1, "Cannot write to the socket");
     }
-    return;
+	if (sock_error(ret)) return 0;
+    return 1;
 }
 
 //send the delete message
-void send_delete(int socket_desc)	{
+int send_delete(int socket_desc)	{
 	char buf[1024];
 	int msg_len = 0;
 	int ret;
@@ -268,8 +272,10 @@ void send_delete(int socket_desc)	{
 
     if (fgets(buf, sizeof(buf), stdin) != (char*)buf) {
         fprintf(stderr, "Error while reading from stdin, exiting...\n");
-        exit(EXIT_FAILURE);
+        return 0;
     }
+
+    //TODO controllare se è numero
 
     //send id for post to delete
     msg_len = strlen(buf);
@@ -277,21 +283,21 @@ void send_delete(int socket_desc)	{
 
     while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0) {
     	if (errno == EINTR) continue;
-        ERROR_HELPER(-1, "Cannot write to socket");
     }
+    if (sock_error(ret)) return 0;
 
     // wait for server's ACK  
 	while ( (msg_len = recv(socket_desc, buf, 3, 0)) < 0 ) {
 	    if (errno == EINTR) continue;
-	    ERROR_HELPER(-1, "Cannot read from socket");
 	}
+    if (sock_error(msg_len)) return 0;
 
 	//get password for post to delete
     printf("Insert the password of post: ");
 
     if (fgets(buf, sizeof(buf), stdin) != (char*)buf) {
         fprintf(stderr, "Error while reading from stdin, exiting...\n");
-        exit(EXIT_FAILURE);
+        return 0;
     }
     
     //send password for post to delete
@@ -300,19 +306,19 @@ void send_delete(int socket_desc)	{
 
     while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0) {
     	if (errno == EINTR) continue;
-        ERROR_HELPER(-1, "Cannot write to socket");
     }
+    if (sock_error(ret)) return 0;
 
     // wait for server's ACK  
 	while ( (msg_len = recv(socket_desc, buf, 3, 0)) < 0 ) {
 	    if (errno == EINTR) continue;
-	    ERROR_HELPER(-1, "Cannot read from socket");
 	}
-	return;
+    if (sock_error(msg_len)) return 0;
+	return 1;
 }
 
 //receive the delete message from client
-void recv_delete(int socket_desc, char username[])	{
+int recv_delete(int socket_desc, char username[])	{
 	char buf[1024];
 	char password[30];
     int buf_len = sizeof(buf);
@@ -322,29 +328,29 @@ void recv_delete(int socket_desc, char username[])	{
 	// wait for id of the post to delete
 	while ( (recv_bytes = recv(socket_desc, buf, buf_len, 0)) < 0 ) {
 	    if (errno == EINTR) continue;
-	    ERROR_HELPER(-1, "Cannot read from socket");
 	}
+	if (sock_error(recv_bytes)) return 0;
 	buf[recv_bytes] = '\0';
 	id = atoi(buf);
 
 	//send ACK to client to confirm
 	while ( (ret = send(socket_desc, "ACK", 3, 0)) < 0) {
         if (errno == EINTR) continue;
-        ERROR_HELPER(-1, "Cannot write to socket");
     }
+	if (sock_error(ret)) return 0;
 
     // wait for password for the post to delete
 	while ( (recv_bytes = recv(socket_desc, password, buf_len, 0)) < 0 ) {
 	    if (errno == EINTR) continue;
-	    ERROR_HELPER(-1, "Cannot read from socket");
 	}
+	if (sock_error(recv_bytes)) return 0;
 	password[recv_bytes] = '\0';
 
 	//send ACK to client to confirm
 	while ( (ret = send(socket_desc, "ACK", 3, 0)) < 0) {
         if (errno == EINTR) continue;
-        ERROR_HELPER(-1, "Cannot write to socket");
     }
+	if (sock_error(ret)) return 0;
     
 	//send deleted message
 	strcpy(buf, delete_post(id, password, username));
@@ -352,9 +358,9 @@ void recv_delete(int socket_desc, char username[])	{
     buf_len = strlen(buf);
     while ( (ret = send(socket_desc, buf, buf_len+1, 0)) < 0 ) {
         if (errno == EINTR) continue;
-        ERROR_HELPER(-1, "Cannot write to the socket");
     }
-    return;
+	if (sock_error(ret)) return 0;
+    return 1;
 }
 
 

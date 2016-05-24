@@ -1,18 +1,29 @@
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>  // htons() and inet_addr()
-#include <netinet/in.h> // struct sockaddr_in
-#include <sys/socket.h>
-
 #include "lib.h"
-#include "socket_util.h"
 
+int client_socket_desc, ret;
+
+void exit_client()  {
+    printf("\nEXITING FROM CLIENT...\n");
+
+    // close server socket
+    ret = close(client_socket_desc);
+    ERROR_HELPER(ret, "Cannot close socket while server shutting down");
+
+    // this should never be executed
+    exit(EXIT_SUCCESS); 
+}
 
 int main(int argc, char* argv[]) {
     int ret;
+
+    //set signals to receive
+    signal(SIGINT, exit_client);
+    signal(SIGTERM, exit_client);
+    signal(SIGQUIT, exit_client);
+    signal(SIGILL, exit_client);
+    signal(SIGHUP, exit_client);
+    signal(SIGSEGV, exit_client);
+    signal(SIGPIPE, SIG_IGN);
 
     //possible commands
     char* quit_command = SERVER_QUIT_COMMAND;
@@ -28,20 +39,19 @@ int main(int argc, char* argv[]) {
     size_t show_command_len = strlen(show_command);
 
     // variables for handling a socket
-    int socket_desc;
-    struct sockaddr_in server_addr = {0}; // some fields are required to be filled with 0
+    struct sockaddr_in server_addr = {0}; 
 
     // create a socket
-    socket_desc = socket(AF_INET, SOCK_STREAM, 0);
-    ERROR_HELPER(socket_desc, "Could not create socket");
+    client_socket_desc = socket(AF_INET, SOCK_STREAM, 0);
+    ERROR_HELPER(client_socket_desc, "Could not create socket");
 
     // set up parameters for the connection
     server_addr.sin_addr.s_addr = inet_addr(SERVER_ADDRESS);
     server_addr.sin_family      = AF_INET;
-    server_addr.sin_port        = htons(SERVER_PORT); // don't forget about network byte order!
+    server_addr.sin_port        = htons(SERVER_PORT); 
 
-    // initiate a connection on the socket
-    ret = connect(socket_desc, (struct sockaddr*) &server_addr, sizeof(struct sockaddr_in));
+    // initialize a connection on the socket
+    ret = connect(client_socket_desc, (struct sockaddr*) &server_addr, sizeof(struct sockaddr_in));
     ERROR_HELPER(ret, "Could not create connection");
 
     char buf[4096];
@@ -49,10 +59,10 @@ int main(int argc, char* argv[]) {
     int msg_len;
 
     // display welcome message from server
-    while ( (msg_len = recv(socket_desc, buf, buf_len - 1, 0)) < 0 ) {
+    while ( (msg_len = recv(client_socket_desc, buf, buf_len - 1, 0)) < 0 ) {
         if (errno == EINTR) continue;
-        ERROR_HELPER(-1, "Cannot read from socket");
     }
+    if (sock_error(msg_len)) exit_client();
     buf[msg_len] = '\0';
     printf("%s", buf);
 
@@ -60,35 +70,35 @@ int main(int argc, char* argv[]) {
         //get and send username
         if (fgets(buf, sizeof(buf), stdin) != (char*)buf) {
             fprintf(stderr, "Error while reading from stdin, exiting...\n");            
-            exit(EXIT_FAILURE);
+            exit_client();
         }
         msg_len = strlen(buf);
-        buf[--msg_len] = '\0'; // remove '\n' from the end of the message
+        buf[--msg_len] = '\0'; 
 
         //check if > 9
-        if (strlen(buf) > 0 && strlen(buf) < 9) {
+        if (strlen(buf) > 0 && strlen(buf) <= 15) {
             break;
         }
         printf("Error: too many characters in the username! Try again: ");
     }   
 
     // send username to server
-    while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0) {
+    while ( (ret = send(client_socket_desc, buf, msg_len, 0)) < 0) {
         if (errno == EINTR) continue;
-        ERROR_HELPER(-1, "Cannot write to socket");
     }
+    if (sock_error(ret)) exit_client();
 
     // display 2° welcome message with username from server
-    while ( (msg_len = recv(socket_desc, buf, buf_len - 1, 0)) < 0 ) {
+    while ( (msg_len = recv(client_socket_desc, buf, buf_len - 1, 0)) < 0 ) {
         if (errno == EINTR) continue;
-        ERROR_HELPER(-1, "Cannot read from socket");
     }
+    if (sock_error(msg_len)) exit_client();
     buf[msg_len] = '\0';
     printf("%s", buf);
 
 
     //recv first showcase
-    recv_showcase(socket_desc);
+    if (! recv_showcase(client_socket_desc) ) exit_client();
 
     // main loop
     while (1) {
@@ -100,38 +110,35 @@ int main(int argc, char* argv[]) {
         printf("*-%s: to quit\n", quit_command);
         printf("*COMMAND: ");
 
-        /* Read a line from stdin
-         *
-         * fgets() reads up to sizeof(buf)-1 bytes and on success
-         * returns the first argument passed to it. */
+        // get command
         if (fgets(buf, sizeof(buf), stdin) != (char*)buf) {
             fprintf(stderr, "Error while reading from stdin, exiting...\n");
             exit(EXIT_FAILURE);
         }
 
         msg_len = strlen(buf);
-        buf[--msg_len] = '\0'; // remove '\n' from the end of the message
+        buf[--msg_len] = '\0'; 
 
-        // send message to server
-        while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0) {
+        // send command to server
+        while ( (ret = send(client_socket_desc, buf, msg_len, 0)) < 0) {
             if (errno == EINTR) continue;
-            ERROR_HELPER(-1, "Cannot write to socket");
         }
+        if (sock_error(ret)) break;
 
 
         //show command so we'll wait for the server to send it
         if (msg_len == show_command_len && !memcmp(buf, show_command, show_command_len))    {
-            recv_showcase(socket_desc);
+            if (! recv_showcase(client_socket_desc)) break;
         }else{
 
             //new command so we are going to write a new post
             if (msg_len == new_command_len && !memcmp(buf, new_command, new_command_len))    {
-                send_post(socket_desc);
+                if (! send_post(client_socket_desc)) break;
             }
 
             //delete command so we are going to delete a post
             if (msg_len == delete_command_len && !memcmp(buf, delete_command, delete_command_len))    {
-                send_delete(socket_desc);
+                if (! send_delete(client_socket_desc)) break;
             }
 
             //quit command so we are exting
@@ -140,21 +147,13 @@ int main(int argc, char* argv[]) {
             }
 
             // read message from server
-            while ( (msg_len = recv(socket_desc, buf, buf_len, 0)) < 0 ) {
+            while ( (msg_len = recv(client_socket_desc, buf, buf_len, 0)) < 0 ) {
                 if (errno == EINTR) continue;
-                ERROR_HELPER(-1, "Cannot read from socket");
             }
+            if (sock_error(msg_len)) exit_client();
 
             printf("SERVER RESPONSE: %s\n", buf); // no need to insert '\0'
         }
     }
-
-
-    // close the socket
-    ret = close(socket_desc);
-    ERROR_HELPER(ret, "Cannot close socket");
-
-    if (DEBUG) fprintf(stderr, "Exiting...\n");
-
-    exit(EXIT_SUCCESS);
+    exit_client();
 }

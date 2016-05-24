@@ -1,14 +1,3 @@
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <time.h>
-#include <unistd.h>
-#include <arpa/inet.h>  // htons()
-#include <netinet/in.h> // struct sockaddr_in
-#include <sys/socket.h>
-
 #include "showcase_util.h"
 
 
@@ -92,7 +81,7 @@ char* delete_post(int id, char password[], char username[])	{
 	    					return "POST SUCCESFULLY DELETED FROM SHOWCASE";
 		    			}else{
 		    				previous->next = punt->next;
-		    				free(punt);
+		    				free((void*)punt);
 		    				printf("POST = %d - DELETED BY %s\n", id, username);
 							semaphore_post();
 	    					return "POST SUCCESFULLY DELETED FROM SHOWCASE";

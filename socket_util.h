@@ -1,26 +1,27 @@
 #ifndef SOCKET_UTIL_H
 #define	SOCKET_UTIL_H
 
-#include "showcase_util.h"
 #include "lib.h"
 
+//check if error from socket
+int sock_error(int sock_bytes);
 
 //send the showcase via socket
-void send_showcase(int socket_desc);
+int send_showcase(int socket_desc);
 
 //recv the showcase via socket
-void recv_showcase(int socket_desc);
+int recv_showcase(int socket_desc);
 
 //send new post from client
-void send_post(int socket_desc);
+int send_post(int socket_desc);
 
 //add new post from server
-void recv_post(int socket_desc, char* username);
+int recv_post(int socket_desc, char* username);
 
 //add new post from server
-void send_delete(int socket_desc);
+int send_delete(int socket_desc);
 
 //add new post from server
-void recv_delete(int socket_desc, char* username);
+int recv_delete(int socket_desc, char* username);
 
 #endif
