@@ -268,19 +268,27 @@ int send_delete(int socket_desc)	{
 	int ret;
 
 	//get id for the post to delete
-	printf("Insert the ID of the post you want to delete: ");
+	int check_id = 1;
+	while(check_id)	{
+		check_id = 0;
+		printf("Insert the ID of the post you want to delete: ");
 
-    if (fgets(buf, sizeof(buf), stdin) != (char*)buf) {
-        fprintf(stderr, "Error while reading from stdin, exiting...\n");
-        return 0;
-    }
-
-    //TODO controllare se è numero
+	    if (fgets(buf, sizeof(buf), stdin) != (char*)buf) {
+	        fprintf(stderr, "Error while reading from stdin, exiting...\n");
+	        return 0;
+	    }
+	    msg_len = strlen(buf);
+	    buf[--msg_len] = '\0'; // remove '\n' from the end of the message
+	    for (int i=0; i<msg_len; i++)	{
+	    	if (!isdigit(buf[i])) {
+	    		printf("ERROR: you didn't inserted a number!\n");
+	    		check_id = 1;
+	    		break;
+	    	}
+	    }
+	}
 
     //send id for post to delete
-    msg_len = strlen(buf);
-    buf[--msg_len] = '\0'; // remove '\n' from the end of the message
-
     while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0) {
     	if (errno == EINTR) continue;
     }

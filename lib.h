@@ -12,6 +12,7 @@
 #include <netinet/in.h> 
 #include <sys/socket.h>
 #include <semaphore.h>
+#include <ctype.h>
 
 
 //client thread structure
