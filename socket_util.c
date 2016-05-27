@@ -127,10 +127,15 @@ int send_post(int socket_desc)	{
 	    //send object for new post
 	    msg_len = strlen(buf);
 	    buf[--msg_len] = '\0'; // remove '\n' from the end of the message
-	    if (strlen(buf) > 0 && strlen(buf) <= 50)	{
-	    	break;
+
+	    if (msg_len == 0)	{
+	    	printf("ERROR: you must insert an object!\n");
+	    	continue;
+	    }else if (msg_len > 50 )	{
+	    	printf("ERROR: too many characters!\n");
+	    	continue;
 	    }
-	    printf("Error: too many characters!\n");
+	    break;
 	}
     while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0) {
     	if (errno == EINTR) continue;
@@ -155,10 +160,15 @@ int send_post(int socket_desc)	{
 	    //send text for new post
 	    msg_len = strlen(buf);
 	    buf[--msg_len] = '\0'; // remove '\n' from the end of the message
-	    if (strlen(buf) > 0 && strlen(buf) <= 1900)	{
-	    	break;
+
+	    if (msg_len == 0)	{
+	    	printf("ERROR: you must insert some text!\n");
+	    	continue;
+	    }else if (msg_len > 1900 )	{
+	    	printf("ERROR: too many characters!\n");
+	    	continue;
 	    }
-	    printf("Error: too many characters!\n");
+	    break;
 	}
     while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0) {
     	if (errno == EINTR) continue;
@@ -183,10 +193,15 @@ int send_post(int socket_desc)	{
 	    //send text for new post
 	    msg_len = strlen(buf);
 	    buf[--msg_len] = '\0'; // remove '\n' from the end of the message
-	    if (strlen(buf) > 0 && strlen(buf) <= 15)	{
-	    	break;
+
+	    if (msg_len == 0)	{
+	    	printf("ERROR: you must insert a password!\n");
+	    	continue;
+	    }else if (msg_len > 15 )	{
+	    	printf("ERROR: too many characters!\n");
+	    	continue;
 	    }
-	    printf("Error: too many characters!\n");
+	    break;
 	}
     
     while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0) {
@@ -299,6 +314,10 @@ int send_delete(int socket_desc)	{
 	    		break;
 	    	}
 	    }
+	    if (strlen(buf) == 0) {
+	    	printf("ERROR: you must insert an ID!\n");
+	    	check_id = 1;
+	    }
 	}
 
     //send id for post to delete
@@ -313,18 +332,30 @@ int send_delete(int socket_desc)	{
 	}
     if (sock_error(msg_len)) return 0;
 
-	//get password for post to delete
-    printf("Insert the password of post: ");
 
-    if (fgets(buf, sizeof(buf), stdin) != (char*)buf) {
-        fprintf(stderr, "Error while reading from stdin, exiting...\n");
-        return 0;
-    }
-    
-    //send password for post to delete
-    msg_len = strlen(buf);
-    buf[--msg_len] = '\0'; // remove '\n' from the end of the message
+    while (1)	{
+		//get password for post to delete
+	    printf("Insert the password of the post: ");
 
+	    if (fgets(buf, sizeof(buf), stdin) != (char*)buf) {
+	        fprintf(stderr, "Error while reading from stdin, exiting...\n");
+	        return 0;
+	    }
+
+	    //send text for new post
+	    msg_len = strlen(buf);
+	    buf[--msg_len] = '\0'; // remove '\n' from the end of the message
+	    if (msg_len == 0)	{
+	    	printf("ERROR: you must insert a password!\n");
+	    	continue;
+	    }else if (msg_len > 15 )	{
+	    	printf("ERROR: too many characters!\n");
+	    	continue;
+	    }
+	    break;
+	}
+
+	//send the password
     while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0) {
     	if (errno == EINTR) continue;
     }

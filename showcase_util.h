@@ -4,13 +4,12 @@
 #include "lib.h"
 
 typedef struct {
-    int id;	//4 byte
-    char author[30]; //30 byte
-    char password[30]; //30 byte
-    char object[100]; //100 byte
-    char text[3800]; //3800 byte
-    time_t date; //8 byte
-    //+ 80 byte to transmit on socket
+    int id;	
+    char author[30]; 
+    char password[30]; 
+    char object[100]; 
+    char text[3800]; 
+    time_t date; 
 } post;
 
 typedef struct showcase_node{

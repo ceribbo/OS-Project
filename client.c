@@ -75,11 +75,14 @@ int main(int argc, char* argv[]) {
         msg_len = strlen(buf);
         buf[--msg_len] = '\0'; 
 
-        //check if > 9
-        if (strlen(buf) > 0 && strlen(buf) <= 15) {
-            break;
+        if (msg_len == 0)   {
+            printf("ERROR: you must insert a username!\nTry again: ");
+            continue;
+        }else if (msg_len > 15 )    {
+            printf("ERROR: too many characters in the username!\nTry again: ");
+            continue;
         }
-        printf("Error: too many characters in the username! Try again: ");
+        break;
     }   
 
     // send username to server
@@ -119,6 +122,11 @@ int main(int argc, char* argv[]) {
         msg_len = strlen(buf);
         buf[--msg_len] = '\0'; 
 
+        //check if empty buf
+        if (msg_len == 0)   {
+            printf("ERROR: you must insert a command!\n");
+            continue;
+        }
         // send command to server
         while ( (ret = send(client_socket_desc, buf, msg_len, 0)) < 0) {
             if (errno == EINTR) continue;

@@ -2,7 +2,11 @@
 
 //handle thread close
 void exit_thread(handler_args_t* args, char username[])  {
-    printf("CLIENT = %s - HAS JUST DISCONNECTED\n", username);
+    if (strlen(username) == 0)  {
+        printf("CLIENT - UKNOWN USER FAILED TO CONNECT\n");
+    }else{
+        printf("CLIENT = %s - HAS JUST DISCONNECTED\n", username);
+    }
 
     // close client socket
     int ret = close(args->socket_desc);
@@ -30,14 +34,14 @@ void* client_handler(void* arg) {
 
     //set socket timeout
     struct timeval timeout;      
-    timeout.tv_sec = 6000;
+    timeout.tv_sec = 600; //10 minutes
     timeout.tv_usec = 0;
 
     ret = setsockopt (socket_desc, SOL_SOCKET, SO_RCVTIMEO, (void *)&timeout, sizeof(timeout));
-    if (ret<0) exit_thread(args, "USER");
+    if (ret<0) exit_thread(args, "");
 
     ret = setsockopt (socket_desc, SOL_SOCKET, SO_SNDTIMEO, (void *)&timeout, sizeof(timeout));
-    if (ret<0) exit_thread(args, "USER");
+    if (ret<0) exit_thread(args, "");
 
     //possible commands
     char* quit_command = SERVER_QUIT_COMMAND;
@@ -64,14 +68,14 @@ void* client_handler(void* arg) {
         if (errno == EINTR) continue;
         if (errno == EAGAIN) break;
     }
-    if (sock_error(ret)) exit_thread(args, "USER");
+    if (sock_error(ret)) exit_thread(args, "");
 
     // read username from client
     while ( (recv_bytes = recv(socket_desc, username, buf_len, 0)) < 0 ) {
         if (errno == EINTR) continue;
         if (errno == EAGAIN) break;
     }
-    if (sock_error(recv_bytes)) exit_thread(args, "USER");
+    if (sock_error(recv_bytes)) exit_thread(args, "");
     username[recv_bytes] = '\0';
 
     printf("CLIENT = %s - HAS JUST CONNECTED\n", username);
