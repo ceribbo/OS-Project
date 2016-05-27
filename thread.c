@@ -28,6 +28,17 @@ void* client_handler(void* arg) {
     size_t buf_len = sizeof(buf);
     size_t msg_len;
 
+    //set socket timeout
+    struct timeval timeout;      
+    timeout.tv_sec = 6000;
+    timeout.tv_usec = 0;
+
+    ret = setsockopt (socket_desc, SOL_SOCKET, SO_RCVTIMEO, (void *)&timeout, sizeof(timeout));
+    if (ret<0) exit_thread(args, "USER");
+
+    ret = setsockopt (socket_desc, SOL_SOCKET, SO_SNDTIMEO, (void *)&timeout, sizeof(timeout));
+    if (ret<0) exit_thread(args, "USER");
+
     //possible commands
     char* quit_command = SERVER_QUIT_COMMAND;
     size_t quit_command_len = strlen(quit_command);
@@ -51,12 +62,14 @@ void* client_handler(void* arg) {
     msg_len = strlen(buf);
     while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0 ) {
         if (errno == EINTR) continue;
+        if (errno == EAGAIN) break;
     }
     if (sock_error(ret)) exit_thread(args, "USER");
 
     // read username from client
     while ( (recv_bytes = recv(socket_desc, username, buf_len, 0)) < 0 ) {
         if (errno == EINTR) continue;
+        if (errno == EAGAIN) break;
     }
     if (sock_error(recv_bytes)) exit_thread(args, "USER");
     username[recv_bytes] = '\0';
@@ -68,6 +81,7 @@ void* client_handler(void* arg) {
     msg_len = strlen(buf);
     while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0 ) {
         if (errno == EINTR) continue;
+        if (errno == EAGAIN) break;
     }
     if (sock_error(ret)) exit_thread(args, username);
 
@@ -78,6 +92,7 @@ void* client_handler(void* arg) {
         // read message from client
         while ( (recv_bytes = recv(socket_desc, buf, buf_len, 0)) < 0 ) {
             if (errno == EINTR) continue;
+            if (errno == EAGAIN) break;
         }
         if (sock_error(recv_bytes)) break;
 
@@ -103,6 +118,7 @@ void* client_handler(void* arg) {
             msg_len = strlen(buf);
             while ( (ret = send(socket_desc, buf, msg_len+1, 0)) < 0 ) {
                 if (errno == EINTR) continue;
+                if (errno == EAGAIN) break;
             }
             if (sock_error(ret)) break;
         }

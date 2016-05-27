@@ -7,7 +7,7 @@ int sock_error(int sock_bytes)	{
 }
 
 
-//send the showcase to the client
+//send the showcase in server
 int send_showcase(int socket_desc)	{
 	char buf[4096];
     int msg_len;
@@ -24,6 +24,7 @@ int send_showcase(int socket_desc)	{
 		    msg_len = strlen(buf);
 		    while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0 ) {
 		        if (errno == EINTR) continue;
+        		if (errno == EAGAIN) break;
 		    }
     		if (sock_error(ret)) {
     			err = 1;
@@ -33,6 +34,7 @@ int send_showcase(int socket_desc)	{
 	        // wait for client's ACK  
 	        while ( (recv_bytes = recv(socket_desc, buf, 3, 0)) < 0 ) {
 	            if (errno == EINTR) continue;
+        		if (errno == EAGAIN) break;
 	        }
     		if (sock_error(recv_bytes)) {
     			err = 1;
@@ -48,12 +50,14 @@ int send_showcase(int socket_desc)	{
 		msg_len = strlen(buf);
 	    while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0 ) {
 	        if (errno == EINTR) continue;
+        	if (errno == EAGAIN) break;
 	    }
     	if (sock_error(ret)) return 0;
 
 	    // wait for client's ACK  
 	    while ( (recv_bytes = recv(socket_desc, buf, 3, 0)) < 0 ) {
 	        if (errno == EINTR) continue;
+        	if (errno == EAGAIN) break;
 	    } 
     	if (sock_error(recv_bytes)) return 0;
 	}
@@ -63,13 +67,14 @@ int send_showcase(int socket_desc)	{
 	msg_len = strlen(buf);
 	while ( (ret = send(socket_desc, buf, msg_len, 0)) < 0 ) {
 		if (errno == EINTR) continue;
+        if (errno == EAGAIN) break;
 	}
     if (sock_error(ret)) return 0;
 
 	return 1;
 }
 
-//receive the showcase from the server
+//receive the showcase in client
 int recv_showcase(int socket_desc)	{
 	char buf[4096];
 	int msg_len;
@@ -104,7 +109,7 @@ int recv_showcase(int socket_desc)	{
 	return 1;
 }
 
-//send new post
+//send new post in client
 int send_post(int socket_desc)	{
 	char buf[4096];
 	int msg_len = 0;
@@ -197,6 +202,7 @@ int send_post(int socket_desc)	{
 	return 1;
 }
 
+// receive new post in server
 int recv_post(int socket_desc, char* username)	{
 	char buf[4096];
     int buf_len = sizeof(buf);
@@ -208,6 +214,7 @@ int recv_post(int socket_desc, char* username)	{
 	// wait for object of the new post  
 	while ( (recv_bytes = recv(socket_desc, object, sizeof(object), 0)) < 0 ) {
 	    if (errno == EINTR) continue;
+        if (errno == EAGAIN) break;
 	}
 	if (sock_error(recv_bytes)) return 0;
 	object[recv_bytes] = '\0';
@@ -215,12 +222,14 @@ int recv_post(int socket_desc, char* username)	{
 	//send ACK to client to confirm
 	while ( (ret = send(socket_desc, "ACK", 3, 0)) < 0) {
         if (errno == EINTR) continue;
+        if (errno == EAGAIN) break;
     }
 	if (sock_error(ret)) return 0;
 
     // wait for text of the new post  
 	while ( (recv_bytes = recv(socket_desc, text, sizeof(text), 0)) < 0 ) {
 	    if (errno == EINTR) continue;
+        if (errno == EAGAIN) break;
 	}
 	if (sock_error(recv_bytes)) return 0;
 	text[recv_bytes] = '\0';
@@ -228,12 +237,14 @@ int recv_post(int socket_desc, char* username)	{
 	//send ACK to client to confirm
 	while ( (ret = send(socket_desc, "ACK", 3, 0)) < 0) {
         if (errno == EINTR) continue;
+        if (errno == EAGAIN) break;
     }
 	if (sock_error(ret)) return 0;
 
     // wait for password for the new post  
 	while ( (recv_bytes = recv(socket_desc, password, sizeof(password), 0)) < 0 ) {
 	    if (errno == EINTR) continue;
+        if (errno == EAGAIN) break;
 	}
 	if (sock_error(recv_bytes)) return 0;
 	password[recv_bytes] = '\0';
@@ -241,6 +252,7 @@ int recv_post(int socket_desc, char* username)	{
 	//send ACK to client to confirm
 	while ( (ret = send(socket_desc, "ACK", 3, 0)) < 0) {
         if (errno == EINTR) continue;
+        if (errno == EAGAIN) break;
     }
 	if (sock_error(ret)) return 0;
 
@@ -256,12 +268,13 @@ int recv_post(int socket_desc, char* username)	{
     buf_len = strlen(buf);
     while ( (ret = send(socket_desc, buf, buf_len+1, 0)) < 0 ) {
         if (errno == EINTR) continue;
+        if (errno == EAGAIN) break;
     }
 	if (sock_error(ret)) return 0;
     return 1;
 }
 
-//send the delete message
+//send the delete message command in client
 int send_delete(int socket_desc)	{
 	char buf[1024];
 	int msg_len = 0;
@@ -325,7 +338,7 @@ int send_delete(int socket_desc)	{
 	return 1;
 }
 
-//receive the delete message from client
+//receive the delete message in server
 int recv_delete(int socket_desc, char username[])	{
 	char buf[1024];
 	char password[30];
@@ -336,6 +349,7 @@ int recv_delete(int socket_desc, char username[])	{
 	// wait for id of the post to delete
 	while ( (recv_bytes = recv(socket_desc, buf, buf_len, 0)) < 0 ) {
 	    if (errno == EINTR) continue;
+        if (errno == EAGAIN) break;
 	}
 	if (sock_error(recv_bytes)) return 0;
 	buf[recv_bytes] = '\0';
@@ -344,12 +358,14 @@ int recv_delete(int socket_desc, char username[])	{
 	//send ACK to client to confirm
 	while ( (ret = send(socket_desc, "ACK", 3, 0)) < 0) {
         if (errno == EINTR) continue;
+        if (errno == EAGAIN) break;
     }
 	if (sock_error(ret)) return 0;
 
     // wait for password for the post to delete
 	while ( (recv_bytes = recv(socket_desc, password, buf_len, 0)) < 0 ) {
 	    if (errno == EINTR) continue;
+        if (errno == EAGAIN) break;
 	}
 	if (sock_error(recv_bytes)) return 0;
 	password[recv_bytes] = '\0';
@@ -357,6 +373,7 @@ int recv_delete(int socket_desc, char username[])	{
 	//send ACK to client to confirm
 	while ( (ret = send(socket_desc, "ACK", 3, 0)) < 0) {
         if (errno == EINTR) continue;
+        if (errno == EAGAIN) break;
     }
 	if (sock_error(ret)) return 0;
     
@@ -366,6 +383,7 @@ int recv_delete(int socket_desc, char username[])	{
     buf_len = strlen(buf);
     while ( (ret = send(socket_desc, buf, buf_len+1, 0)) < 0 ) {
         if (errno == EINTR) continue;
+        if (errno == EAGAIN) break;
     }
 	if (sock_error(ret)) return 0;
     return 1;
