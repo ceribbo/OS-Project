@@ -10,5 +10,6 @@ to start the server, then on another terminal:
 
     ./client
 
-<a href="https://github.com/ceribbo/so-project/documentazione.pdf">Documentation</a> (Italian)
+<a href="https://github.com/ceribbo/OS-Project/blob/master/documentazione.pdf">Documentation</a> (Italian)
+
 Have Fun!
