@@ -32,17 +32,6 @@ void* client_handler(void* arg) {
     size_t buf_len = sizeof(buf);
     size_t msg_len;
 
-    //set socket timeout
-    struct timeval timeout;      
-    timeout.tv_sec = 600; //10 minutes
-    timeout.tv_usec = 0;
-
-    ret = setsockopt (socket_desc, SOL_SOCKET, SO_RCVTIMEO, (void *)&timeout, sizeof(timeout));
-    if (ret<0) exit_thread(args, "");
-
-    ret = setsockopt (socket_desc, SOL_SOCKET, SO_SNDTIMEO, (void *)&timeout, sizeof(timeout));
-    if (ret<0) exit_thread(args, "");
-
     //possible commands
     char* quit_command = SERVER_QUIT_COMMAND;
     size_t quit_command_len = strlen(quit_command);
@@ -55,6 +44,17 @@ void* client_handler(void* arg) {
 
     char* show_command = SERVER_SHOW_COMMAND;
     size_t show_command_len = strlen(show_command);
+
+    //set socket timeout
+    struct timeval timeout;      
+    timeout.tv_sec = 600; //10 minutes
+    timeout.tv_usec = 0;
+
+    ret = setsockopt (socket_desc, SOL_SOCKET, SO_RCVTIMEO, (void *)&timeout, sizeof(timeout));
+    if (ret<0) exit_thread(args, "");
+
+    ret = setsockopt (socket_desc, SOL_SOCKET, SO_SNDTIMEO, (void *)&timeout, sizeof(timeout));
+    if (ret<0) exit_thread(args, "");
 
     // parse client IP address and port
     char client_ip[INET_ADDRSTRLEN];

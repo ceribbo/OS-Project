@@ -51,11 +51,6 @@ int main(int argc, char* argv[]) {
         ERROR_HELPER(-1, "Could not create a semaphore\n");
     }
 
-    //test***********************************
-    insert_post("edu", "oggettoEDU", "testoEDU", "password"); 
-    insert_post("ceribbo", "oggettoCE", "testoCE", "password");
-    //fineTest*******************************
-
     //initialize socket server socket and structures
     int client_desc;
     struct sockaddr_in server_addr = {0};

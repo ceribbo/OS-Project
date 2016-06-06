@@ -76,6 +76,7 @@ char* delete_post(int id, char password[], char username[])	{
 	    			if (strlen(punt->element.password) == strlen(password) && !memcmp(punt->element.password, password, strlen(password))) {
 		    			if (punt == bacheca)	{
 		    				bacheca = punt->next;
+		    				free((void*)punt);
 		    				printf("POST = %d - DELETED BY %s\n", id, username);
 							semaphore_post();
 	    					return "POST SUCCESFULLY DELETED FROM SHOWCASE";
